@@ -49,6 +49,8 @@ const path = require("path");
     })
   );
 
+  let downloaded = 0;
+
   result.forEach((item) => {
     fs.mkdirSync(path.join(__dirname, "data", "images", item.id), {
       recursive: true,
@@ -61,13 +63,13 @@ const path = require("path");
         item.id,
         `${sticker.id}.png`
       );
-      sticker.sprite = `https://cdn.jsdelivr.net/gh/naptestdev/zalo-stickers/data/images/${item.id}/${sticker.id}.png`;
-      sticker.iframe = `https://sprite.napdev.workers.dev/?url=${sticker.sprite}`;
       if (!fs.existsSync(imgPath))
         axios
-          .get(sticker.sprite, { responseType: "stream" })
+          .get(sticker.sprite, { responseType: "arraybuffer" })
           .then((res) => {
-            res.data.pipe(fs.createWriteStream(imgPath));
+            fs.writeFileSync(imgPath, res.data);
+            downloaded++;
+            console.log("Downloaded: ", downloaded);
           })
           .catch((err) => {
             console.log(err.message, sticker.sprite);
@@ -75,7 +77,27 @@ const path = require("path");
     });
   });
 
-  fs.writeFileSync("data/list.json", JSON.stringify(result, null, 2), {
+  let final = result.map(
+    ({ name, thumbnail, icon, stickerId, id, stickers }) => ({
+      name,
+      thumbnail,
+      icon,
+      stickerId,
+      id,
+      stickers: stickers.map(({ id: stickerId }) => {
+        const spriteURL = `https://cdn.jsdelivr.net/gh/naptestdev/zalo-stickers/data/images/${id}/${stickerId}.png`;
+        return {
+          id: stickerId,
+          spriteURL,
+          iframe: `https://sprite.napdev.workers.dev/?url=${encodeURIComponent(
+            spriteURL
+          )}`,
+        };
+      }),
+    })
+  );
+
+  fs.writeFileSync("data/list.json", JSON.stringify(final, null, 2), {
     encoding: "utf-8",
   });
 })();
