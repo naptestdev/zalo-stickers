@@ -75,13 +75,51 @@ const path = require("path");
             console.log(err.message, sticker.sprite);
           });
     });
+
+    fs.mkdirSync(path.join(__dirname, "data", "images", "thumbnails"), {
+      recursive: true,
+    });
+
+    axios
+      .get(item.thumbnail, { responseType: "arraybuffer" })
+      .then((res) => {
+        fs.writeFileSync(
+          path.join(
+            __dirname,
+            "data",
+            "images",
+            "thumbnails",
+            `${item.id}.png`
+          ),
+          res.data
+        );
+      })
+      .catch(() => {
+        console.log(`Thumbnail ${item.id} failed`);
+      });
+
+    fs.mkdirSync(path.join(__dirname, "data", "images", "icons"), {
+      recursive: true,
+    });
+
+    axios
+      .get(item.icon, { responseType: "arraybuffer" })
+      .then((res) => {
+        fs.writeFileSync(
+          path.join(__dirname, "data", "images", "icons", `${item.id}.png`),
+          res.data
+        );
+      })
+      .catch(() => {
+        console.log(`Icon ${item.id} failed`);
+      });
   });
 
   let final = result.map(
     ({ name, thumbnail, icon, stickerId, id, stickers }) => ({
       name,
-      thumbnail,
-      icon,
+      thumbnail: `https://cdn.jsdelivr.net/gh/naptestdev/zalo-stickers/data/images/thumbnails/${id}.png`,
+      icon: `https://cdn.jsdelivr.net/gh/naptestdev/zalo-stickers/data/images/icons/${id}.png`,
       stickerId,
       id,
       stickers: stickers.map(({ id: stickerId }) => {
@@ -89,9 +127,6 @@ const path = require("path");
         return {
           id: stickerId,
           spriteURL,
-          iframe: `https://sprite.napdev.workers.dev/?url=${encodeURIComponent(
-            spriteURL
-          )}`,
         };
       }),
     })
